@@ -19,3 +19,8 @@ ingenieria del software.
 La siguiente actualización añadirá cambios
 sobre cosas que haya aprendido tanto en
 comandos como en programas que realize.
+
+ - Changes -
+
+Añadida carpeta de C++/Punteros/Preparación de ejercicio y el manual de usuario de este camino de aprendizaje.
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
