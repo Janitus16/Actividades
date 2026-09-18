@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C++ Quest — Tracker (standalone)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14121C;
+    --panel:#1E1B2C;
+    --panel-border:#332E48;
+    --gold:#E3A63E;
+    --teal:#4FCDB0;
+    --text:#EDEAF5;
+    --text-muted:#948FB0;
+    --locked:#3A3650;
+    --danger:#D9636B;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+    padding-bottom:60px;
+  }
+  h1,h2,h3,.display{
+    font-family:'Chakra Petch',sans-serif;
+  }
+  .num{
+    font-family:'Space Mono',monospace;
+  }
+  .hero{
+    max-width:760px;
+    margin:0 auto;
+    padding:36px 20px 24px;
+  }
+  .hero h1{
+    font-size:clamp(28px,6vw,40px);
+    font-weight:700;
+    margin:0;
+    letter-spacing:0.5px;
+  }
+  .subtitle{
+    color:var(--text-muted);
+    margin:4px 0 24px;
+    font-size:15px;
+  }
+  .character-panel{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:10px;
+    padding:20px;
+  }
+  .char-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .rank-name{
+    font-family:'Chakra Petch',sans-serif;
+    font-weight:600;
+    font-size:19px;
+    color:var(--gold);
+  }
+  .level-badge{
+    font-family:'Space Mono',monospace;
+    font-size:14px;
+    color:var(--text-muted);
+    transition:color 0.4s ease, transform 0.4s ease;
+  }
+  .level-badge.levelup{
+    color:var(--gold);
+    transform:scale(1.15);
+  }
+  .xp-bar-track{
+    background:#0F0D16;
+    border-radius:6px;
+    height:10px;
+    margin:14px 0 6px;
+    overflow:hidden;
+    border:1px solid var(--panel-border);
+  }
+  .xp-bar-fill{
+    height:100%;
+    background:linear-gradient(90deg,var(--gold),var(--teal));
+    border-radius:6px;
+    transition:width 0.5s ease;
+  }
+  .xp-detail{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    color:var(--text-muted);
+    font-family:'Space Mono',monospace;
+  }
+  .completion-line{
+    margin-top:12px;
+    font-size:13px;
+    color:var(--text-muted);
+  }
+  main.rail{
+    max-width:760px;
+    margin:32px auto 0;
+    padding:0 20px;
+    position:relative;
+  }
+  main.rail::before{
+    content:"";
+    position:absolute;
+    left:31px;
+    top:14px;
+    bottom:14px;
+    width:2px;
+    background:var(--panel-border);
+  }
+  .world{
+    position:relative;
+    padding-left:56px;
+    margin-bottom:14px;
+  }
+  .world-node{
+    position:absolute;
+    left:0;
+    top:0;
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    background:var(--panel);
+    border:2px solid var(--locked);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Space Mono',monospace;
+    font-weight:700;
+    font-size:15px;
+    color:var(--text-muted);
+    z-index:1;
+    cursor:pointer;
+  }
+  .world.done .world-node{
+    border-color:var(--teal);
+    color:var(--teal);
+    background:rgba(79,205,176,0.12);
+  }
+  .world.progress .world-node{
+    border-color:var(--gold);
+    color:var(--gold);
+  }
+  .world-header{
+    cursor:pointer;
+    padding:12px 14px;
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:8px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+  }
+  .world-header:hover{ border-color:#453f63; }
+  .world-title{
+    font-weight:600;
+    font-size:15px;
+  }
+  .world-sub{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-top:2px;
+  }
+  .world-count{
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    color:var(--text-muted);
+    white-space:nowrap;
+  }
+  .quests{
+    display:none;
+    padding:12px 14px 4px;
+    border:1px solid var(--panel-border);
+    border-top:none;
+    border-radius:0 0 8px 8px;
+    background:#18162280;
+  }
+  .quests.open{ display:block; }
+  .quest{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    padding:9px 0;
+    border-bottom:1px solid #2A2638;
+  }
+  .quest:last-child{ border-bottom:none; }
+  .quest input[type=checkbox]{
+    margin-top:3px;
+    width:17px;
+    height:17px;
+    accent-color:var(--teal);
+    flex-shrink:0;
+    cursor:pointer;
+  }
+  .quest label{
+    flex:1;
+    cursor:pointer;
+    font-size:14px;
+  }
+  .quest label.checked{
+    color:var(--text-muted);
+    text-decoration:line-through;
+  }
+  .quest-xp{
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    color:var(--gold);
+    white-space:nowrap;
+  }
+  .boss{
+    margin-top:26px;
+  }
+  .boss .world-node{
+    border-color:var(--danger);
+    color:var(--danger);
+  }
+  .boss.done .world-node{
+    border-color:var(--teal);
+    color:var(--teal);
+    background:rgba(79,205,176,0.12);
+  }
+  footer{
+    max-width:760px;
+    margin:30px auto 0;
+    padding:0 20px;
+    display:flex;
+    justify-content:center;
+  }
+  .reset-btn{
+    background:none;
+    border:1px solid var(--panel-border);
+    color:var(--text-muted);
+    padding:8px 16px;
+    border-radius:6px;
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .reset-btn:hover{ border-color:var(--danger); color:var(--danger); }
+  .loading{
+    text-align:center;
+    color:var(--text-muted);
+    padding:40px 20px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hero">
+    <h1>C++ QUEST</h1>
+    <p class="subtitle">De Bucles a Archimago del Código</p>
+    <div class="character-panel" id="characterPanel">
+      <div class="loading">Cargando tu progreso...</div>
+    </div>
+  </div>
+  <main class="rail" id="worldsContainer"></main>
+  <footer style="flex-direction:column;gap:10px;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+      <button class="reset-btn" id="exportBtn">Exportar progreso (.json)</button>
+      <button class="reset-btn" id="importBtn">Importar progreso (.json)</button>
+      <button class="reset-btn" id="resetBtn">Reiniciar progreso</button>
+    </div>
+    <input type="file" id="importInput" accept="application/json" style="display:none">
+    <p style="color:var(--text-muted);font-size:12px;text-align:center;max-width:460px;margin:0;">
+      El progreso vive en este navegador y además en <code>progreso.json</code>. Antes de hacer commit/push, pulsa "Exportar" y sobrescribe ese fichero en tu repo. En otro dispositivo: haz pull y pulsa "Importar" para cargarlo.
+    </p>
+  </footer>
+</div>
+
+<script>
+const WORLDS = [
+  { id:'m1', num:1, name:'El Bosque de los Bucles', tema:'Control de flujo', exercises:[
+    {id:'m1-e1', name:'Generador de Mapa de Mazmorra', xp:25},
+    {id:'m1-e2', name:'Sistema de Turnos', xp:25},
+    {id:'m1-e3', name:'Detector de Combo', xp:40},
+  ]},
+  { id:'m2', num:2, name:'La Torre de las Funciones', tema:'Funciones y recursividad', exercises:[
+    {id:'m2-e1', name:'Calculadora de Daño Modular', xp:25},
+    {id:'m2-e2', name:'Fibonacci de Experiencia', xp:25},
+    {id:'m2-e3', name:'Referencias que Curan', xp:25},
+    {id:'m2-e4', name:'El Laberinto Recursivo', xp:60},
+  ]},
+  { id:'m3', num:3, name:'Las Llanuras de Datos', tema:'Arrays, strings, vectores', exercises:[
+    {id:'m3-e1', name:'Inventario de Mochila', xp:25},
+    {id:'m3-e2', name:'Tabla de Puntuaciones (sin ordenar aún)', xp:25},
+    {id:'m3-e3', name:'Detector de Palíndromos Mágicos', xp:25},
+    {id:'m3-e4', name:'Mapa 2D del Nivel', xp:40},
+  ]},
+  { id:'m4', num:4, name:'La Mazmorra de los Punteros', tema:'Punteros y referencias', exercises:[
+    {id:'m4-e1', name:'Direcciones Secretas', xp:15},
+    {id:'m4-e2', name:'Aritmética Peligrosa', xp:25},
+    {id:'m4-e3', name:'Punteros a Punteros: La Matrioska', xp:40},
+    {id:'m4-e4', name:'El Puntero Colgante', xp:25},
+    {id:'m4-e5', name:'Handles de Entidades', xp:60},
+  ]},
+  { id:'m5', num:5, name:'La Cripta de la Memoria', tema:'Memoria dinámica y smart pointers', exercises:[
+    {id:'m5-e1', name:'Tu Propio Array Dinámico', xp:40},
+    {id:'m5-e2', name:'Cazador de Fugas', xp:25},
+    {id:'m5-e3', name:'Asteroides Fragmentados', xp:60},
+    {id:'m5-e4', name:'El Salto a los Smart Pointers', xp:40},
+  ]},
+  { id:'m6', num:6, name:'El Castillo — Ala I', tema:'POO: clases y objetos', exercises:[
+    {id:'m6-e1', name:'Tu Primer Personaje', xp:15},
+    {id:'m6-e2', name:'El Arma Equipable', xp:25},
+    {id:'m6-e3', name:'Constructores en Cadena', xp:25},
+  ]},
+  { id:'m7', num:7, name:'El Castillo — Ala II', tema:'Herencia y polimorfismo', exercises:[
+    {id:'m7-e1', name:'El Bestiario', xp:25},
+    {id:'m7-e2', name:'El Ejército Polimórfico', xp:40},
+    {id:'m7-e3', name:'La Máquina de Estados de tu Personaje', xp:60},
+    {id:'m7-e4', name:'La Trampa del Slicing', xp:40},
+  ]},
+  { id:'m8', num:8, name:'El Castillo — Ala III', tema:'POO avanzada', exercises:[
+    {id:'m8-e1', name:'Vectores que se Suman', xp:25},
+    {id:'m8-e2', name:'El operator[] Peligroso', xp:40},
+    {id:'m8-e3', name:'La Regla de los Tres Fantasmas', xp:60},
+    {id:'m8-e4', name:'El GameManager Único', xp:25},
+  ]},
+  { id:'m9', num:9, name:'La Biblioteca de la STL', tema:'Templates y contenedores', exercises:[
+    {id:'m9-e1', name:'Pila Genérica', xp:25},
+    {id:'m9-e2', name:'Diccionario de Objetos', xp:25},
+    {id:'m9-e3', name:'¿Set o Unordered_set?', xp:40},
+    {id:'m9-e4', name:'Lambdas al Rescate', xp:25},
+  ]},
+  { id:'m10', num:10, name:'La Arena de los Algoritmos', tema:'Sorting y Big O', exercises:[
+    {id:'m10-e1', name:'Ordena la Burbuja', xp:25},
+    {id:'m10-e2', name:'Duelo de Algoritmos: Merge vs Quick', xp:60},
+    {id:'m10-e3', name:'La Búsqueda Binaria Correcta', xp:40},
+    {id:'m10-e4', name:'El Ranking Final', xp:25},
+  ]},
+  { id:'m11', num:11, name:'El Templo de las Excepciones', tema:'Manejo de errores', exercises:[
+    {id:'m11-e1', name:'Inventario a Prueba de Balas', xp:25},
+    {id:'m11-e2', name:'Excepciones a tu Medida', xp:40},
+    {id:'m11-e3', name:'División Peligrosa', xp:15},
+  ]},
+  { id:'m12', num:12, name:'La Cumbre Experta', tema:'C++ moderno', exercises:[
+    {id:'m12-e1', name:'Move Semantics: Robando Recursos', xp:60},
+    {id:'m12-e2', name:'El Observador del Juego', xp:40},
+    {id:'m12-e3', name:'Lambdas con Memoria', xp:25},
+    {id:'m12-e4', name:'El Reto Final Opcional: Un Hilo Aparte (bonus)', xp:90},
+  ]},
+];
+
+const BOSS = { id:'boss', name:'El Jefe Final', tema:'Proyecto integrador', exercises:[
+  {id:'boss-f1', name:'Fase 1 — Clases base (Personaje/Enemigo)', xp:50},
+  {id:'boss-f2', name:'Fase 2 — Bucle de combate por turnos', xp:50},
+  {id:'boss-f3', name:'Fase 3 — Inventario y excepciones', xp:50},
+  {id:'boss-f4', name:'Fase 4 — Sistema de puntuación/ranking', xp:50},
+  {id:'boss-f5', name:'Fase 5 — Victoria Total', xp:100},
+]};
+
+const RANKS = [
+  {min:0, name:'Novato del Compilador'},
+  {min:100, name:'Aprendiz de Sintaxis'},
+  {min:250, name:'Domador de Bucles'},
+  {min:425, name:'Guerrero de Punteros'},
+  {min:625, name:'Arquitecto de Clases'},
+  {min:875, name:'Maestro de la STL'},
+  {min:1125, name:'Sabio del Big O'},
+  {min:1375, name:'Caballero del Código Moderno'},
+  {min:1700, name:'Archimago de C++'},
+  {min:1820, name:'Leyenda Viva'},
+];
+
+const STORAGE_KEY = 'cpp_quest_progress';
+let progress = {};
+let lastLevel = 0;
+let openWorlds = {};
+
+function allExercises(){
+  return WORLDS.flatMap(w => w.exercises).concat(BOSS.exercises);
+}
+
+function computeXP(){
+  return allExercises().reduce((sum,ex)=> sum + (progress[ex.id] ? ex.xp : 0), 0);
+}
+
+function rankFor(xp){
+  let current = RANKS[0], idx = 0;
+  for(let i=0;i<RANKS.length;i++){
+    if(xp >= RANKS[i].min){ current = RANKS[i]; idx = i; }
+  }
+  const next = RANKS[idx+1];
+  return { level: idx+1, name: current.name, next };
+}
+
+function renderCharacterPanel(){
+  const xp = computeXP();
+  const { level, name, next } = rankFor(xp);
+  const totalEx = allExercises().length;
+  const doneEx = allExercises().filter(ex=>progress[ex.id]).length;
+  const panel = document.getElementById('characterPanel');
+
+  let barPct, xpLine;
+  if(next){
+    const prevMin = RANKS[level-1].min;
+    barPct = Math.min(100, Math.round(((xp - prevMin) / (next.min - prevMin)) * 100));
+    xpLine = xp + ' / ' + next.min + ' XP para ' + next.name;
+  } else {
+    barPct = 100;
+    xpLine = xp + ' XP — rango máximo alcanzado';
+  }
+
+  const levelUp = level > lastLevel && lastLevel !== 0;
+  lastLevel = level;
+
+  panel.innerHTML =
+    '<div class="char-top">' +
+      '<span class="rank-name">' + name + '</span>' +
+      '<span class="level-badge' + (levelUp ? ' levelup' : '') + '" id="levelBadge">NIVEL <span class="num">' + level + '</span></span>' +
+    '</div>' +
+    '<div class="xp-bar-track"><div class="xp-bar-fill" style="width:' + barPct + '%"></div></div>' +
+    '<div class="xp-detail"><span>' + xpLine + '</span></div>' +
+    '<div class="completion-line">' + doneEx + ' / ' + totalEx + ' misiones completadas</div>';
+
+  if(levelUp){
+    setTimeout(()=>{
+      const b = document.getElementById('levelBadge');
+      if(b) b.classList.remove('levelup');
+    }, 900);
+  }
+}
+
+function worldStatus(world){
+  const done = world.exercises.filter(ex=>progress[ex.id]).length;
+  if(done === 0) return 'pending';
+  if(done === world.exercises.length) return 'done';
+  return 'progress';
+}
+
+function renderWorlds(){
+  const container = document.getElementById('worldsContainer');
+  container.innerHTML = '';
+  WORLDS.forEach(w => container.appendChild(renderWorldNode(w, w.num, false)));
+  container.appendChild(renderWorldNode(BOSS, '🐉', true));
+}
+
+function renderWorldNode(world, marker, isBoss){
+  const status = worldStatus(world);
+  const done = world.exercises.filter(ex=>progress[ex.id]).length;
+  const wrap = document.createElement('div');
+  wrap.className = 'world' + (isBoss ? ' boss' : '') + (status==='done' ? ' done' : (status==='progress' ? ' progress' : ''));
+
+  const isOpen = !!openWorlds[world.id];
+
+  const questsHtml = world.exercises.map(ex => {
+    const checked = !!progress[ex.id];
+    return '<div class="quest">' +
+      '<input type="checkbox" id="cb-' + ex.id + '" data-id="' + ex.id + '" ' + (checked?'checked':'') + '>' +
+      '<label for="cb-' + ex.id + '" class="' + (checked?'checked':'') + '">' + ex.name + '</label>' +
+      '<span class="quest-xp">' + ex.xp + ' XP</span>' +
+    '</div>';
+  }).join('');
+
+  wrap.innerHTML =
+    '<div class="world-node">' + marker + '</div>' +
+    '<div class="world-header" data-toggle="' + world.id + '">' +
+      '<div>' +
+        '<div class="world-title">' + world.name + '</div>' +
+        '<div class="world-sub">' + world.tema + '</div>' +
+      '</div>' +
+      '<div class="world-count">' + done + '/' + world.exercises.length + '</div>' +
+    '</div>' +
+    '<div class="quests' + (isOpen ? ' open' : '') + '" id="quests-' + world.id + '">' + questsHtml + '</div>';
+
+  return wrap;
+}
+
+async function loadProgress(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    progress = raw ? JSON.parse(raw) : {};
+  }catch(e){
+    progress = {};
+  }
+}
+
+async function saveProgress(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  }catch(e){
+    console.error('No se pudo guardar el progreso', e);
+  }
+}
+
+function exportProgress(){
+  const blob = new Blob([JSON.stringify(progress, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'progreso.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importProgressFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try{
+      const imported = JSON.parse(e.target.result);
+      progress = imported;
+      lastLevel = rankFor(computeXP()).level;
+      await saveProgress();
+      renderCharacterPanel();
+      renderWorlds();
+      attachCheckboxEvents();
+    }catch(err){
+      alert('Ese archivo no es un progreso.json válido.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function attachEvents(){
+  document.getElementById('worldsContainer').addEventListener('click', (e)=>{
+    const toggleEl = e.target.closest('[data-toggle]');
+    if(toggleEl){
+      const id = toggleEl.getAttribute('data-toggle');
+      openWorlds[id] = !openWorlds[id];
+      renderWorlds();
+      attachCheckboxEvents();
+      return;
+    }
+  });
+  attachCheckboxEvents();
+
+  document.getElementById('exportBtn').addEventListener('click', exportProgress);
+  document.getElementById('importBtn').addEventListener('click', ()=>{
+    document.getElementById('importInput').click();
+  });
+  document.getElementById('importInput').addEventListener('change', (e)=>{
+    importProgressFile(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', async ()=>{
+    if(confirm('¿Reiniciar todo tu progreso? Esta acción no se puede deshacer.')){
+      progress = {};
+      lastLevel = 0;
+      await saveProgress();
+      renderCharacterPanel();
+      renderWorlds();
+      attachCheckboxEvents();
+    }
+  });
+}
+
+function attachCheckboxEvents(){
+  document.querySelectorAll('.quest input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change', async (e)=>{
+      const id = e.target.getAttribute('data-id');
+      progress[id] = e.target.checked;
+      await saveProgress();
+      renderCharacterPanel();
+      renderWorlds();
+      attachCheckboxEvents();
+      // Re-abrir el mundo donde se hizo el cambio
+      const worldId = id.split('-')[0];
+      openWorlds[worldId === 'boss' ? 'boss' : worldId] = true;
+      const q = document.getElementById('quests-' + (id.startsWith('boss') ? 'boss' : worldId));
+      if(q) q.classList.add('open');
+    });
+  });
+}
+
+(async function init(){
+  await loadProgress();
+  lastLevel = rankFor(computeXP()).level;
+  renderCharacterPanel();
+  renderWorlds();
+  attachEvents();
+})();
+</script>
+</body>
+</html>
