@@ -1,6 +1,6 @@
 #include <iostream>
 
-void main() {
+int main() {
     int x, y;
     std::cout << "Introduzca el tamaño de mapa que espera generar, (x,y): ";
     std::cin >> x >> y;
@@ -19,4 +19,5 @@ void main() {
         }
         std::cout << "\n";
     }
+    return 0;
 }
